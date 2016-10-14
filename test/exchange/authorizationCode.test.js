@@ -4,25 +4,6 @@ var chai = require('chai')
 
 describe('exchange.authorizationCode', function() {
   
-  function issue(client, code, redirectURI, done) {
-    if (client.id == 'c123' && code == 'abc123' && redirectURI == 'http://example.com/oa/callback') {
-      return done(null, 's3cr1t');
-    } else if (client.id == 'c223' && code == 'abc223' && redirectURI == 'http://example.com/oa/callback') {
-      return done(null, 's3cr1t', 'getANotehr');
-    } else if (client.id == 'c323' && code == 'abc323' && redirectURI == 'http://example.com/oa/callback') {
-      return done(null, 's3cr1t', null, { 'expires_in': 3600 })
-    } else if (client.id == 'c423' && code == 'abc423' && redirectURI == 'http://example.com/oa/callback') {
-      return done(null, 's3cr1t', 'blahblag', { 'token_type': 'foo', 'expires_in': 3600 })
-    } else if (client.id == 'c523' && code == 'abc523' && redirectURI == 'http://example.com/oa/callback') {
-      return done(null, 's3cr1t', { 'expires_in': 3600 })
-    } else if (client.id == 'cUN' && code == 'abcUN' && redirectURI == 'http://example.com/oa/callback') {
-      return done(null, false)
-    } else if (client.id == 'cTHROW') {
-      throw new Error('something was thrown')
-    }
-    return done(new Error('something is wrong'));
-  }
-  
   it('should be named authorization_code', function() {
     expect(authorizationCode(function(){}).name).to.equal('authorization_code');
   });
@@ -37,6 +18,14 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        if (client.id !== 'c123') { return done(new Error('incorrect client argument')); }
+        if (code !== 'abc123') { return done(new Error('incorrect code argument')); }
+        if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+        
+        return done(null, 's3cr1t');
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c123', name: 'Example' };
@@ -64,6 +53,14 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        if (client.id !== 'c223') { return done(new Error('incorrect client argument')); }
+        if (code !== 'abc223') { return done(new Error('incorrect code argument')); }
+        if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+        
+        return done(null, 's3cr1t', 'getANotehr');
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c223', name: 'Example' };
@@ -91,6 +88,14 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        if (client.id !== 'c523') { return done(new Error('incorrect client argument')); }
+        if (code !== 'abc523') { return done(new Error('incorrect code argument')); }
+        if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+        
+        return done(null, 's3cr1t', { 'expires_in': 3600 })
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c523', name: 'Example' };
@@ -118,6 +123,14 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        if (client.id !== 'c323') { return done(new Error('incorrect client argument')); }
+        if (code !== 'abc323') { return done(new Error('incorrect code argument')); }
+        if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+        
+        return done(null, 's3cr1t', null, { 'expires_in': 3600 })
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c323', name: 'Example' };
@@ -145,6 +158,14 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        if (client.id !== 'c423') { return done(new Error('incorrect client argument')); }
+        if (code !== 'abc423') { return done(new Error('incorrect code argument')); }
+        if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+        
+        return done(null, 's3cr1t', 'blahblag', { 'token_type': 'foo', 'expires_in': 3600 })
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c423', name: 'Example' };
@@ -168,10 +189,88 @@ describe('exchange.authorizationCode', function() {
     });
   });
   
+  describe('issuing an access token based on body', function() {
+    var response, err;
+    
+    function issue(client, code, redirectURI, body, done) {
+      if (client.id !== 'c123') { return done(new Error('incorrect client argument')); }
+      if (code !== 'abc123') { return done(new Error('incorrect code argument')); }
+      if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+      if (body.code_verifier !== 's3cr1t') { return done(new Error('incorrect body argument')); }
+      
+      return done(null, 's3cr1t');
+    }
+
+    before(function(done) {
+      chai.connect.use(authorizationCode(issue))
+        .req(function(req) {
+          req.user = { id: 'c123', name: 'Example' };
+          req.body = { code: 'abc123', redirect_uri: 'http://example.com/oa/callback', code_verifier: 's3cr1t' };
+        })
+        .end(function(res) {
+          response = res;
+          done();
+        })
+        .dispatch();
+    });
+    
+    it('should respond with headers', function() {
+      expect(response.getHeader('Content-Type')).to.equal('application/json');
+      expect(response.getHeader('Cache-Control')).to.equal('no-store');
+      expect(response.getHeader('Pragma')).to.equal('no-cache');
+    });
+    
+    it('should respond with body', function() {
+      expect(response.body).to.equal('{"access_token":"s3cr1t","token_type":"Bearer"}');
+    });
+  });
+  
+  describe('issuing an access token based on authInfo', function() {
+    var response, err;
+    
+    function issue(client, code, redirectURI, body, authInfo, done) {
+      if (client.id !== 'c123') { return done(new Error('incorrect client argument')); }
+      if (code !== 'abc123') { return done(new Error('incorrect code argument')); }
+      if (redirectURI !== 'http://example.com/oa/callback') { return done(new Error('incorrect redirectURI argument')); }
+      if (body.code_verifier !== 's3cr1t') { return done(new Error('incorrect body argument')); }
+      if (authInfo.ip !== '127.0.0.1') { return done(new Error('incorrect authInfo argument')); }
+      
+      return done(null, 's3cr1t');
+    }
+
+    before(function(done) {
+      chai.connect.use(authorizationCode(issue))
+        .req(function(req) {
+          req.user = { id: 'c123', name: 'Example' };
+          req.body = { code: 'abc123', redirect_uri: 'http://example.com/oa/callback', code_verifier: 's3cr1t' };
+          req.authInfo = { ip: '127.0.0.1' };
+        })
+        .end(function(res) {
+          response = res;
+          done();
+        })
+        .dispatch();
+    });
+    
+    it('should respond with headers', function() {
+      expect(response.getHeader('Content-Type')).to.equal('application/json');
+      expect(response.getHeader('Cache-Control')).to.equal('no-store');
+      expect(response.getHeader('Pragma')).to.equal('no-cache');
+    });
+    
+    it('should respond with body', function() {
+      expect(response.body).to.equal('{"access_token":"s3cr1t","token_type":"Bearer"}');
+    });
+  });
+  
   describe('not issuing an access token', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        return done(null, false)
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'cUN', name: 'Example' };
@@ -197,6 +296,10 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        return done(null, '.ignore')
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c123', name: 'Example' };
@@ -222,6 +325,10 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        return done(new Error('something is wrong'));
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'cXXX', name: 'Example' };
@@ -244,6 +351,10 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        throw new Error('something was thrown')
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'cTHROW', name: 'Example' };
@@ -266,6 +377,10 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        return done(null, '.ignore')
+      }
+      
       chai.connect.use(authorizationCode(issue))
         .req(function(req) {
           req.user = { id: 'c123', name: 'Example' };
@@ -287,6 +402,10 @@ describe('exchange.authorizationCode', function() {
     var response, err;
 
     before(function(done) {
+      function issue(client, code, redirectURI, done) {
+        return done(null, 's3cr1t');
+      }
+      
       chai.connect.use(authorizationCode({ userProperty: 'client' }, issue))
         .req(function(req) {
           req.client = { id: 'c123', name: 'Example' };
